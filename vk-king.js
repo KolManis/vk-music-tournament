@@ -5,7 +5,7 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const log = (...a) => console.log('[KH]', ...a);
-  log('версия 9 (сворачивание в уголок)');
+  log('версия 10 (плавный спиннер)');
 
   // Отслеживаем медиа-элементы плеера ВК, чтобы знать, играет ли звук, и уметь ставить на паузу
   const media = window.__khMedia || (window.__khMedia = new Set());
@@ -119,7 +119,14 @@
     root.querySelector('#kh-min').title = m ? 'Развернуть' : 'Свернуть в уголок';
   };
   root.querySelector('#kh-close').onclick = () => { pauseAll(); root.remove(); document.removeEventListener('keydown', onKey, true); };
-  const status = (h, s = '') => main.innerHTML = `<div class="spin"></div><div class="label" style="text-align:center">Турнир треков</div><h1>${h}</h1><div class="sub">${s}</div>`;
+  // Разметку экрана загрузки создаём один раз и дальше меняем только текст — иначе спиннер пересоздаётся и дёргается
+  const status = (h, s = '') => {
+    if (!main.querySelector('#kh-st-h')) {
+      main.innerHTML = `<div class="spin"></div><div class="label" style="text-align:center">Турнир треков</div><h1 id="kh-st-h"></h1><div class="sub" id="kh-st-s"></div>`;
+    }
+    main.querySelector('#kh-st-h').textContent = h;
+    main.querySelector('#kh-st-s').textContent = s;
+  };
   const big = u => (u || '').replace(/([?&](?:size|cs)=)\d+x\d+/g, '$1600x600');
 
   // --- Сбор треков (список виртуальный — собираем по ходу прокрутки) ---
@@ -209,7 +216,7 @@
   window.scrollTo(0, 0);
   const tracks = [...byId.values()];
   log(`Собрано треков: ${tracks.length}, высота страницы: ${document.documentElement.scrollHeight}`);
-  if (tracks.length < 2) { status('Не нашёл треки 😕', 'Пришли мне скрин консоли.'); return; }
+  if (tracks.length < 2) { status('Не нашёл треки 😕', 'Пришли мне скрин консоли.'); main.querySelector('.spin')?.remove(); return; }
 
   // --- Воспроизведение через плеер ВК ---
   const findRow = t => {
