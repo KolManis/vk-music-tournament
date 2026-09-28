@@ -238,35 +238,34 @@
     render();
   };
 
-  // --- Турнир на выбывание: раунд = все пары, победители идут дальше ---
+  // --- Турнир на выбывание: раунд делится на пары, при нечётном числе одна группа — тройка ---
   const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
-  let round, roundNo, next, idx, eliminated, done, totalMatches;
+  let groups, gi, roundNo, roundSize, next, eliminated;
   const startRound = list => {
-    round = list; next = []; idx = 0; roundNo++;
-    if (round.length % 2) next.push(round.pop()); // нечётный — проходит без боя
+    roundNo++; roundSize = list.length; next = []; gi = 0; groups = [];
+    for (let i = 0; i + 1 < list.length; i += 2) groups.push([list[i], list[i + 1]]);
+    if (list.length % 2) groups[groups.length - 1].push(list[list.length - 1]); // нечётный — последняя группа из трёх
   };
   const reset = () => {
     tracks.forEach(t => t.wins = 0);
-    roundNo = 0; eliminated = []; done = 0; totalMatches = tracks.length - 1;
+    roundNo = 0; eliminated = [];
     startRound(shuffle(tracks.slice()));
     render();
   };
 
   let busy = false;
   function pick(side) {
-    if (busy) return;
+    const g = groups[gi];
+    if (busy || !g[side]) return;
     busy = true;
     pauseAll(); playing = null; msg('');
-    const cards = main.querySelectorAll('.card');
-    cards[side]?.classList.add('chosen');
-    cards[1 - side]?.classList.add('lost');
+    main.querySelectorAll('.card').forEach((c, i) => c.classList.add(i === side ? 'chosen' : 'lost'));
     setTimeout(() => {
       busy = false;
-      const a = round[idx], b = round[idx + 1];
-      const [w, l] = side === 0 ? [a, b] : [b, a];
-      w.wins++; l.outRound = roundNo;
-      next.push(w); eliminated.push(l); done++; idx += 2;
-      if (idx >= round.length) {
+      const w = g[side];
+      w.wins++; next.push(w);
+      g.forEach(t => { if (t !== w) { t.outRound = roundNo; eliminated.push(t); } });
+      if (++gi >= groups.length) {
         if (next.length === 1) return finish(next[0]);
         startRound(shuffle(next));
       }
@@ -279,9 +278,10 @@
     probe(t);
     return `background-image:url('${esc(hiRes.get(t.cover) || t.cover)}')" data-cover="${esc(t.cover)}`;
   };
-  const roundName = n => n === 2 ? 'Финал' : n === 4 ? 'Полуфинал' : n === 8 ? 'Четвертьфинал' : `Раунд ${roundNo}`;
+  const roundName = n => n === 2 ? 'Финал' : n === 3 ? 'Финал · тройка' : n <= 5 ? 'Полуфинал' : n <= 11 ? 'Четвертьфинал' : `Раунд ${roundNo}`;
+  const KEYS = { 2: ['←', '→'], 3: ['←', '↓', '→'] };
 
-  const card = (t, side) => {
+  const card = (t, side, n) => {
     const on = playing === t && isPlaying();
     return `
     <div class="card ${playing === t ? 'on' : ''}">
@@ -292,24 +292,24 @@
       <div><div class="t" title="${esc(t.title)}">${esc(t.title)}</div><div class="a">${esc(t.artist) || '&nbsp;'}</div></div>
       ${playing === t ? `<div class="seek"><button data-skip="-15">−15</button><span id="kh-cur">0:00</span>
         <input id="kh-range" type="range" min="0" max="1000" value="0"><span id="kh-dur">0:00</span><button data-skip="15">+15</button></div>` : ''}
-      <button class="win" data-win="${side}">Этот лучше<kbd>${side ? '→' : '←'}</kbd></button>
+      <button class="win" data-win="${side}">Этот лучше<kbd>${KEYS[n][side]}</kbd></button>
     </div>`;
   };
 
   function render() {
-    const pairs = round.length / 2, pairNo = idx / 2 + 1;
-    const a = round[idx], b = round[idx + 1];
-    [round[idx + 2], round[idx + 3]].forEach(t => t && probe(t)); // заранее грузим обложки следующей пары
-    const bgT = playing || a;
+    const g = groups[gi], n = g.length;
+    (groups[gi + 1] || []).forEach(probe); // заранее грузим обложки следующей группы
+    const bgT = playing || g[0];
     bgEl.style.backgroundImage = bgT.cover ? `url('${esc(bgT.cover)}')` : '';
+    const out = eliminated.length, total = tracks.length - 1;
     main.innerHTML = `
-      <div class="label" style="text-align:center">Турнир треков · ${round.length + next.length - idx / 2} в игре</div>
-      <h1>${roundName(round.length)}</h1>
-      <div class="sub">Пара ${pairNo} из ${pairs} · всего выбрано ${done} из ${totalMatches}</div>
-      <div class="bar" style="margin-left:auto;margin-right:auto"><div style="width:${done / totalMatches * 100}%"></div></div>
-      <div class="pair">${card(a, 0)}<div class="vs">VS</div>${card(b, 1)}</div>
-      <div class="hint">← / → — выбрать · 1 / 2 — слушать · пробел — пауза</div>`;
-    main.querySelectorAll('[data-play]').forEach(el => el.onclick = () => toggle(el.dataset.play === '0' ? a : b));
+      <div class="label" style="text-align:center">Турнир треков · ${tracks.length - out} в игре</div>
+      <h1>${roundName(roundSize)}</h1>
+      <div class="sub">${n === 3 ? 'Тройка' : 'Пара'} ${gi + 1} из ${groups.length} · в раунде ${roundSize} треков · выбыло ${out} из ${total}</div>
+      <div class="bar" style="margin-left:auto;margin-right:auto"><div style="width:${out / total * 100}%"></div></div>
+      <div class="pair">${g.map((t, i) => card(t, i, n)).join('<div class="vs">VS</div>')}</div>
+      <div class="hint">${KEYS[n].join(' / ')} — выбрать · ${n === 3 ? '1 / 2 / 3' : '1 / 2'} — слушать · пробел — пауза</div>`;
+    main.querySelectorAll('[data-play]').forEach(el => el.onclick = () => toggle(g[+el.dataset.play]));
     main.querySelectorAll('[data-win]').forEach(el => el.onclick = () => pick(+el.dataset.win));
     main.querySelectorAll('[data-skip]').forEach(el => el.onclick = () => {
       const m = active(); if (m) m.currentTime = Math.max(0, Math.min((m.duration || 1e9) - 1, m.currentTime + +el.dataset.skip));
@@ -323,10 +323,10 @@
       if (!document.getElementById('kh-root') || e.target.matches?.('input:not([type=range]), textarea')) return;
       const k = e.key;
       if (k === 'ArrowLeft') pick(0);
-      else if (k === 'ArrowRight') pick(1);
-      else if (k === '1') toggle(a);
-      else if (k === '2') toggle(b);
-      else if (k === ' ') { if (playing) toggle(playing); else toggle(a); }
+      else if (k === 'ArrowRight') pick(n - 1);
+      else if (k === 'ArrowDown' && n === 3) pick(1);
+      else if (/^[1-3]$/.test(k) && g[k - 1]) toggle(g[k - 1]);
+      else if (k === ' ') toggle(playing || g[0]);
       else return;
       e.preventDefault(); e.stopPropagation();
     };
