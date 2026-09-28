@@ -7,7 +7,7 @@ window.KH_LIMIT = 10;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const log = (...a) => console.log('[KH]', ...a);
-  log('версия 11');
+  log('версия 12');
 
   // Отслеживаем медиа-элементы плеера ВК, чтобы знать, играет ли звук, и уметь ставить на паузу
   const media = window.__khMedia || (window.__khMedia = new Set());
@@ -194,7 +194,9 @@ window.KH_LIMIT = 10;
   stopBtn.textContent = 'Хватит, играть с этими';
   stopBtn.onclick = () => { stopReq = true; stopBtn.disabled = true; stopBtn.textContent = 'Останавливаю…'; };
   root.querySelector('#kh-wrap').appendChild(stopBtn);
-  const LIMIT = +window.KH_LIMIT || 0; // для пробы: window.KH_LIMIT = 10 перед запуском
+  // Необязательный лимит: window.KH_LIMIT = 10 перед запуском. Действует на один запуск, потом сбрасывается
+  const LIMIT = +window.KH_LIMIT || 0;
+  delete window.KH_LIMIT;
   while (stable < 20 && !stopReq && !(LIMIT && byId.size >= LIMIT)) {
     harvest();
     window.scrollBy(0, innerHeight * 0.8);
