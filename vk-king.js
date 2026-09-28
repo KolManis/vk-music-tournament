@@ -78,11 +78,12 @@
     #kh-root li .w{margin-left:auto;opacity:.5;font-size:13px;white-space:nowrap}
     #kh-root .spin{width:48px;height:48px;border-radius:50%;border:4px solid rgba(255,255,255,.1);border-top-color:var(--acc);animation:kh-spin 1s linear infinite;margin:40px auto 20px}
     @keyframes kh-spin{to{transform:rotate(360deg)}}
-    #kh-root .msg{min-height:20px;color:#ff8a80 !important;text-align:center;margin-top:12px}
+    #kh-root .kh-msg{border:0 !important;background:none !important;padding:0 !important;min-height:20px;color:#ff8a80 !important;text-align:center;margin-top:12px}
+    #kh-root .kh-msg:empty{display:none}
     @media (max-width:640px){#kh-root .pair{gap:10px}#kh-root .vs{width:40px;height:40px;font-size:14px;margin:0 -12px}#kh-root .card{padding:10px;border-radius:18px;gap:10px}
       #kh-root .t{font-size:16px}#kh-root .a{font-size:13px}#kh-root .pbtn span{width:56px;height:56px;font-size:22px}#kh-root .win{font-size:14px;padding:12px}#kh-root kbd{display:none}}
   </style><div id="kh-bg"></div><button class="top" id="kh-close" title="Закрыть">✕</button>
-  <div id="kh-wrap"><div id="kh-main"></div><div class="msg" id="kh-msg"></div></div>`;
+  <div id="kh-wrap"><div id="kh-main"></div><div class="kh-msg" id="kh-msg"></div></div>`;
   document.body.appendChild(root);
   const main = root.querySelector('#kh-main');
   const msg = t => root.querySelector('#kh-msg').textContent = t || '';
