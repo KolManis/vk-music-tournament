@@ -5,7 +5,7 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const log = (...a) => console.log('[KH]', ...a);
-  log('версия 8 (поиск строки трека)');
+  log('версия 9 (сворачивание в уголок)');
 
   // Отслеживаем медиа-элементы плеера ВК, чтобы знать, играет ли звук, и уметь ставить на паузу
   const media = window.__khMedia || (window.__khMedia = new Set());
@@ -71,7 +71,27 @@
     #kh-root .win{margin-top:auto;padding:16px;font-size:17px;font-weight:700;background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 10px 30px rgba(124,92,255,.35)}
     #kh-root kbd{font:600 12px/1 inherit;padding:3px 7px;border-radius:6px;background:rgba(255,255,255,.2);margin-left:8px}
     #kh-root .hint{margin-top:22px;opacity:.45;font-size:13px;text-align:center}
-    #kh-root .top{position:fixed;top:16px;right:20px;z-index:3;border-radius:50%;width:42px;height:42px;padding:0}
+    #kh-root .top{position:fixed;top:16px;right:20px;z-index:3;display:flex;gap:8px}
+    #kh-root .top button{border-radius:50%;width:42px;height:42px;padding:0;font-size:16px}
+    #kh-root.mini{inset:auto 16px 16px auto;width:460px;max-width:calc(100vw - 32px);max-height:75vh;border-radius:22px;border:1px solid rgba(255,255,255,.15);box-shadow:0 20px 60px rgba(0,0,0,.6)}
+    #kh-root.mini .top{position:absolute;top:10px;right:10px}
+    #kh-root.mini .top button{width:32px;height:32px;font-size:13px}
+    #kh-root.mini #kh-bg,#kh-root.mini .vs,#kh-root.mini .hint,#kh-root.mini .label,#kh-root.mini .bar,#kh-root.mini .seek,#kh-root.mini .spin{display:none}
+    #kh-root.mini #kh-wrap{padding:12px}
+    #kh-root.mini h1{font-size:16px;margin:2px 80px 2px 0;text-align:left;align-self:flex-start}
+    #kh-root.mini .sub{font-size:12px;margin-bottom:8px;text-align:left;align-self:flex-start}
+    #kh-root.mini .pair{flex-direction:column;gap:8px}
+    #kh-root.mini .card{flex-direction:row;align-items:center;padding:8px;gap:10px;border-radius:14px;max-width:none}
+    #kh-root.mini .card:hover{transform:none}
+    #kh-root.mini .card>div:nth-child(2){flex:1;min-width:0}
+    #kh-root.mini .cover{width:56px;height:56px;flex:none;border-radius:10px;font-size:22px;aspect-ratio:auto}
+    #kh-root.mini .pbtn span{width:28px;height:28px;font-size:12px}
+    #kh-root.mini .eq{display:none}
+    #kh-root.mini .t{font-size:14px;-webkit-line-clamp:1}
+    #kh-root.mini .a{font-size:12px;margin-top:0}
+    #kh-root.mini .win{margin-top:0;padding:8px 12px;font-size:13px;flex:none}
+    #kh-root.mini kbd{display:none}
+    #kh-root.mini ol{display:none}
     #kh-root ol{max-width:640px;width:100%;padding:0;margin:8px 0 24px;list-style:none;counter-reset:n}
     #kh-root li{counter-increment:n;display:flex;gap:14px;align-items:center;padding:10px 14px;border-radius:14px;background:var(--card);margin-bottom:8px}
     #kh-root li::before{content:counter(n);width:28px;text-align:center;font-weight:800;opacity:.5}
@@ -83,7 +103,7 @@
     #kh-root .kh-msg:empty{display:none}
     @media (max-width:640px){#kh-root .pair{gap:10px}#kh-root .vs{width:40px;height:40px;font-size:14px;margin:0 -12px}#kh-root .card{padding:10px;border-radius:18px;gap:10px}
       #kh-root .t{font-size:16px}#kh-root .a{font-size:13px}#kh-root .pbtn span{width:56px;height:56px;font-size:22px}#kh-root .win{font-size:14px;padding:12px}#kh-root kbd{display:none}}
-  </style><div id="kh-bg"></div><button class="top" id="kh-close" title="Закрыть">✕</button>
+  </style><div id="kh-bg"></div><div class="top"><button id="kh-min" title="Свернуть в уголок">–</button><button id="kh-close" title="Закрыть">✕</button></div>
   <div id="kh-wrap"><div id="kh-main"></div><div class="kh-msg" id="kh-msg"></div></div>`;
   document.body.appendChild(root);
   const main = root.querySelector('#kh-main');
@@ -93,6 +113,11 @@
   document.removeEventListener('keydown', window.__khKeyL || (() => {}), true);
   window.__khKeyL = onKey;
   document.addEventListener('keydown', onKey, true);
+  root.querySelector('#kh-min').onclick = () => {
+    const m = root.classList.toggle('mini');
+    root.querySelector('#kh-min').textContent = m ? '⤢' : '–';
+    root.querySelector('#kh-min').title = m ? 'Развернуть' : 'Свернуть в уголок';
+  };
   root.querySelector('#kh-close').onclick = () => { pauseAll(); root.remove(); document.removeEventListener('keydown', onKey, true); };
   const status = (h, s = '') => main.innerHTML = `<div class="spin"></div><div class="label" style="text-align:center">Турнир треков</div><h1>${h}</h1><div class="sub">${s}</div>`;
   const big = u => (u || '').replace(/([?&](?:size|cs)=)\d+x\d+/g, '$1600x600');
@@ -357,7 +382,7 @@
       r.onchange = () => { const m = active(); if (m && isFinite(m.duration)) m.currentTime = r.value / 1000 * m.duration; r.dragging = false; };
     }
     window.__khKey = e => {
-      if (!document.getElementById('kh-root') || e.target.matches?.('input:not([type=range]), textarea')) return;
+      if (!document.getElementById('kh-root') || root.classList.contains('mini') || e.target.matches?.('input:not([type=range]), textarea')) return;
       const k = e.key;
       if (k === 'ArrowLeft') pick(0);
       else if (k === 'ArrowRight') pick(n - 1);
