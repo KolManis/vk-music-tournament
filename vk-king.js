@@ -5,7 +5,7 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const log = (...a) => console.log('[KH]', ...a);
-  log('версия 7 (обложки из mediaSession)');
+  log('версия 8 (поиск строки трека)');
 
   // Отслеживаем медиа-элементы плеера ВК, чтобы знать, играет ли звук, и уметь ставить на паузу
   const media = window.__khMedia || (window.__khMedia = new Set());
@@ -227,13 +227,30 @@
     }
     log('artwork: нет данных в mediaSession', navigator.mediaSession?.metadata);
   };
+  // Строка выгружена из DOM — ищем её прокруткой: сначала вокруг запомненной позиции, потом всё шире, потом по всей странице
+  const seekRow = async t => {
+    const tryAt = async y => {
+      window.scrollTo(0, Math.max(0, y - innerHeight / 2));
+      for (let i = 0; i < 4; i++) { await sleep(120); const r = findRow(t); if (r) return r; }
+      return null;
+    };
+    const step = innerHeight * 0.7;
+    for (let k = 0; k <= 12; k++) {
+      for (const y of k ? [t.y + k * step, t.y - k * step] : [t.y]) {
+        const r = await tryAt(y);
+        if (r) { t.y = r.getBoundingClientRect().top + scrollY; return r; }
+      }
+    }
+    for (let y = 0; y < document.documentElement.scrollHeight; y += step) {
+      const r = await tryAt(y);
+      if (r) { t.y = r.getBoundingClientRect().top + scrollY; return r; }
+    }
+    return null;
+  };
   let playing = null;
   const startTrack = async t => {
     let row = findRow(t);
-    if (!row) { // строка выгружена из DOM — прокручиваем к ней под оверлеем
-      window.scrollTo(0, Math.max(0, t.y - innerHeight / 2));
-      for (let i = 0; i < 25 && !(row = findRow(t)); i++) await sleep(150);
-    }
+    if (!row) { msg('Ищу трек на странице ВК…'); row = await seekRow(t); msg(''); }
     if (!row) { msg('Не нашёл этот трек на странице ВК'); log('row not found', t); return false; }
     row.scrollIntoView({ block: 'center' });
     await sleep(150);
