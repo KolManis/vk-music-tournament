@@ -5,6 +5,7 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const log = (...a) => console.log('[KH]', ...a);
+  log('версия 7 (обложки из mediaSession)');
 
   // Отслеживаем медиа-элементы плеера ВК, чтобы знать, играет ли звук, и уметь ставить на паузу
   const media = window.__khMedia || (window.__khMedia = new Set());
@@ -319,7 +320,7 @@
     const g = groups[gi], n = g.length;
     (groups[gi + 1] || []).forEach(probe); // заранее грузим обложки следующей группы
     const bgT = playing || g[0];
-    bgEl.style.backgroundImage = bgT.cover ? `url('${esc(bgT.cover)}')` : '';
+    bgEl.style.backgroundImage = bgT.cover ? `url("${hiRes.get(bgT.cover) || bgT.cover}")` : '';
     const out = eliminated.length, total = tracks.length - 1;
     main.innerHTML = `
       <div class="label" style="text-align:center">Турнир треков · ${tracks.length - out} в игре</div>
@@ -362,7 +363,7 @@
   function finish(champ) {
     window.__khKey = null;
     const rest = eliminated.slice().sort((x, y) => y.outRound - x.outRound || y.wins - x.wins);
-    bgEl.style.backgroundImage = champ.cover ? `url('${esc(champ.cover)}')` : '';
+    bgEl.style.backgroundImage = champ.cover ? `url("${hiRes.get(champ.cover) || champ.cover}")` : '';
     main.innerHTML = `
       <div class="label" style="text-align:center">Турнир окончен</div>
       <h1>🏆 Победитель</h1>
