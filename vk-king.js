@@ -151,8 +151,14 @@
     }
   };
   status('Собираю треки…', 'Прокручиваю список до конца. Не трогай страницу и не переключай вкладку.');
-  let last = -1, stable = 0;
-  while (stable < 20) {
+  let last = -1, stable = 0, stopReq = false;
+  const stopBtn = document.createElement('button');
+  stopBtn.className = 'win';
+  stopBtn.style.cssText = 'margin-top:8px;padding:14px 28px';
+  stopBtn.textContent = 'Хватит, играть с этими';
+  stopBtn.onclick = () => { stopReq = true; stopBtn.disabled = true; stopBtn.textContent = 'Останавливаю…'; };
+  root.querySelector('#kh-wrap').appendChild(stopBtn);
+  while (stable < 20 && !stopReq) {
     harvest();
     window.scrollBy(0, innerHeight * 0.8);
     await sleep(500);
@@ -170,7 +176,9 @@
     } else if (byId.size !== last) { stable = 0; }
     last = byId.size;
     status('Собираю треки…', `Найдено: ${byId.size}${stable ? ` · жду подгрузку (${stable}/20)…` : ''}`);
+    if (!stopReq) stopBtn.textContent = `Хватит, играть с ${byId.size} треками`;
   }
+  stopBtn.remove();
   window.scrollTo(0, 0);
   const tracks = [...byId.values()];
   log(`Собрано треков: ${tracks.length}, высота страницы: ${document.documentElement.scrollHeight}`);
