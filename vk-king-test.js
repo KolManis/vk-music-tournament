@@ -7,7 +7,7 @@ window.KH_LIMIT = 10;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const log = (...a) => console.log('[KH]', ...a);
-  log('версия 12');
+  log('версия 13 (победитель играет в финале)');
 
   // Отслеживаем медиа-элементы плеера ВК, чтобы знать, играет ли звук, и уметь ставить на паузу
   const media = window.__khMedia || (window.__khMedia = new Set());
@@ -423,7 +423,10 @@ window.KH_LIMIT = 10;
       <h1>🏆 Победитель</h1>
       <div class="sub">из ${tracks.length} треков</div>
       <div class="pair"><div class="card gold">
-        <div class="cover" style="${coverStyle(champ)}">${champ.cover ? '' : '🎵'}</div>
+        <div class="cover" id="kh-champ" style="${coverStyle(champ)}">${champ.cover ? '' : '🎵'}
+          <div class="pbtn"><span id="kh-champ-btn">▶</span></div>
+          <div class="eq" id="kh-champ-eq" style="display:none"><i></i><i></i><i></i><i></i></div>
+        </div>
         <div><div class="t">${esc(champ.title)}</div><div class="a">${esc(champ.artist)}</div></div>
       </div></div>
       <h1 style="margin-top:40px;font-size:22px">Топ-30</h1>
@@ -431,7 +434,25 @@ window.KH_LIMIT = 10;
         <div style="min-width:0"><div style="font-weight:700">${esc(t.title)}</div><div style="opacity:.6;font-size:13px">${esc(t.artist)}</div></div>
         <span class="w">побед: ${t.wins}</span></li>`).join('')}</ol>
       <div style="text-align:center"><button class="win" id="kh-again" style="padding:14px 28px">Сыграть ещё раз</button></div>`;
-    main.querySelector('#kh-again').onclick = reset;
+    main.querySelector('#kh-again').onclick = () => { pauseAll(); playing = null; reset(); };
+
+    // Победитель сразу начинает играть; клик по обложке — пауза / продолжить
+    const champUi = () => {
+      const on = isPlaying();
+      const btn = document.getElementById('kh-champ-btn'), eq = document.getElementById('kh-champ-eq');
+      if (!btn) return;
+      btn.textContent = on ? '❚❚' : '▶';
+      eq.style.display = on ? '' : 'none';
+      document.getElementById('kh-champ').closest('.card').classList.toggle('on', on);
+    };
+    main.querySelector('#kh-champ').onclick = async () => {
+      if (isPlaying()) pauseAll();
+      else if (active()) await active().play();
+      else await startTrack(champ);
+      champUi();
+    };
+    startTrack(champ).then(ok => { if (ok) playing = champ; champUi(); });
+
     log('Итог:\n' + [champ, ...rest].map((t, i) => `${i + 1}. ${t.artist} — ${t.title} (${t.wins})`).join('\n'));
   }
 
