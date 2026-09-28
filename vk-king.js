@@ -5,7 +5,7 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const log = (...a) => console.log('[KH]', ...a);
-  log('версия 13 (победитель играет в финале)');
+  log('версия 14');
 
   // Отслеживаем медиа-элементы плеера ВК, чтобы знать, играет ли звук, и уметь ставить на паузу
   const media = window.__khMedia || (window.__khMedia = new Set());
@@ -295,6 +295,14 @@
       row.querySelector('[data-testid="MusicTrackRow_Title"]'), row,
     ].filter(Boolean);
     pauseAll();
+    // Мы ставим на паузу сам <audio>, а ВК об этом не знает и считает, что трек ещё играет.
+    // Тогда клик по строке для ВК значит «пауза» — вместо клика просто продолжаем воспроизведение.
+    const tap = row.querySelector('[data-testid="audiorow-tappable"]');
+    if (/пауз/i.test(tap?.getAttribute('aria-label') || '')) {
+      for (const m of allMedia()) if (m.paused && m.currentTime > 0 && !m.ended) { try { await m.play(); } catch {} }
+      await sleep(250);
+      if (isPlaying()) { log('продолжил текущий трек ВК'); grabArtwork(t); return true; }
+    }
     for (const el of candidates) {
       realClick(el);
       for (let i = 0; i < 8; i++) { await sleep(150); if (isPlaying()) { log('играет, клик по', el); grabArtwork(t); return true; } }
@@ -449,7 +457,8 @@
       else await startTrack(champ);
       champUi();
     };
-    startTrack(champ).then(ok => { if (ok) playing = champ; champUi(); });
+    log('Финал: запускаю победителя', champ.title);
+    startTrack(champ).then(ok => { log('Победитель играет:', ok); if (ok) playing = champ; champUi(); });
 
     log('Итог:\n' + [champ, ...rest].map((t, i) => `${i + 1}. ${t.artist} — ${t.title} (${t.wins})`).join('\n'));
   }
