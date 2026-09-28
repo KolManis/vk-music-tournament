@@ -208,6 +208,24 @@
     el.dispatchEvent(new MouseEvent('mouseup', o));
     el.dispatchEvent(new MouseEvent('click', o));
   };
+  // Обложки в списке подписаны ВК на 68x68 — большую берём из Media Session, которую плеер ВК заполняет при воспроизведении
+  const grabArtwork = async t => {
+    for (let i = 0; i < 20; i++) {
+      const md = navigator.mediaSession?.metadata;
+      if (md?.artwork?.length && md.title && t.title.includes(md.title.trim().slice(0, 20))) {
+        const px = a => parseInt((a.sizes || '').split('x')[0]) || 0;
+        const best = [...md.artwork].sort((x, y) => px(y) - px(x))[0]?.src;
+        log('artwork', md.artwork);
+        if (best && t.cover && best !== t.cover) {
+          hiRes.set(t.cover, best);
+          document.querySelectorAll(`#kh-root [data-cover="${CSS.escape(t.cover)}"]`).forEach(el => el.style.backgroundImage = `url('${best}')`);
+        }
+        return;
+      }
+      await sleep(250);
+    }
+    log('artwork: нет данных в mediaSession', navigator.mediaSession?.metadata);
+  };
   let playing = null;
   const startTrack = async t => {
     let row = findRow(t);
@@ -226,7 +244,7 @@
     pauseAll();
     for (const el of candidates) {
       realClick(el);
-      for (let i = 0; i < 8; i++) { await sleep(150); if (isPlaying()) { log('играет, клик по', el); return true; } }
+      for (let i = 0; i < 8; i++) { await sleep(150); if (isPlaying()) { log('играет, клик по', el); grabArtwork(t); return true; } }
     }
     log('не запустилось. Кандидаты:', candidates, 'Строка:', row.outerHTML.slice(0, 2500));
     msg('Звук не запустился 😕 Пришли мне то, что в консоли после [KH].');
