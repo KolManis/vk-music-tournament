@@ -1,10 +1,9 @@
 # VK Music Tournament
 
 <p align="center">
-  <img src="assets/alexey.webp" alt="Алексей Лаюкс" width="360">
+  <a href="https://t.me/imgoingbackto505jj"><img src="assets/lekha-sticker.png" alt="Лёха" width="96"></a><br>
+  <b>для Лёхи</b>
 </p>
-
-<p align="center"><b>Сделано специально для Алексея Лаюкса</b><br>Telegram: <a href="https://t.me/imgoingbackto505jj">@imgoingbackto505jj</a></p>
 
 Турнир на выбывание для твоих аудиозаписей ВКонтакте: треки разбиваются на пары, ты выбираешь лучший, при нечётном числе одна группа — тройка; победители проходят в следующий раунд — пока не останется один.
 
