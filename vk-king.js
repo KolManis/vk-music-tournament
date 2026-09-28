@@ -103,6 +103,40 @@
     title: row.querySelector('[data-testid="MusicTrackRow_Title"]')?.textContent.trim() || '',
     artist: row.querySelector('[data-testid="MusicTrackRow_Authors"]')?.textContent.trim() || '',
   });
+  // Обложки: пропускаем размытые заглушки ленивой загрузки (data:, blob:), из srcset берём самый большой вариант
+  const sizeOf = u => +((u || '').match(/[?&](?:size|cs)=(\d+)x/) || [])[1] || 0;
+  const coverScore = u => !u ? 0 : /^(data|blob):/.test(u) ? 1 : 2 + sizeOf(u);
+  const bestImg = row => {
+    const urls = [];
+    for (const img of row.querySelectorAll('img')) {
+      for (const part of (img.srcset || '').split(',')) {
+        const [u, w] = part.trim().split(/\s+/);
+        if (u) urls.push({ u, w: parseFloat(w) || 0 });
+      }
+      if (img.currentSrc) urls.push({ u: img.currentSrc, w: img.naturalWidth });
+      if (img.src) urls.push({ u: img.src, w: img.naturalWidth });
+    }
+    for (const el of row.querySelectorAll('[style*="background-image"]')) urls.push({ u: bgUrl(el), w: 0 });
+    const ok = urls.filter(x => x.u && !/^(data|blob):/.test(x.u));
+    ok.sort((a, b) => (b.w || sizeOf(b.u)) - (a.w || sizeOf(a.u)));
+    return ok[0]?.u || urls[0]?.u || '';
+  };
+  // Проверяем, отдаёт ли ВК обложку в 600x600; если нет — берём исходную
+  const hiRes = new Map();
+  const probe = t => {
+    if (!t.cover || hiRes.has(t.cover)) return;
+    const u = big(t.cover);
+    hiRes.set(t.cover, t.cover);
+    if (u === t.cover) return;
+    const im = new Image();
+    im.onload = () => {
+      if (im.naturalWidth >= 200) {
+        hiRes.set(t.cover, u);
+        document.querySelectorAll(`#kh-root [data-cover="${CSS.escape(t.cover)}"]`).forEach(el => el.style.backgroundImage = `url('${u}')`);
+      }
+    };
+    im.src = u;
+  };
   const harvest = () => {
     for (const row of document.querySelectorAll(ROW)) {
       if (row.closest('.vkuiHorizontalScroll__host')) continue; // блоки рекомендаций
@@ -110,9 +144,9 @@
       if (!title) continue;
       const idEl = row.closest('[data-audio-id]') || row.querySelector('[data-audio-id]');
       const id = idEl?.getAttribute('data-audio-id') || `${artist}—${title}`.toLowerCase();
-      const cover = row.querySelector('img')?.src || bgUrl(row.querySelector('[style*="background-image"]'));
+      const cover = bestImg(row);
       const old = byId.get(id);
-      if (old) { if (!old.cover && cover) old.cover = cover; continue; }
+      if (old) { if (cover && coverScore(cover) > coverScore(old.cover)) old.cover = cover; continue; }
       byId.set(id, { id, title, artist, cover, y: row.getBoundingClientRect().top + scrollY, wins: 0 });
     }
   };
@@ -232,7 +266,11 @@
     }, 380);
   }
 
-  const coverStyle = t => t.cover ? `background-image:url('${esc(big(t.cover))}'),url('${esc(t.cover)}')` : '';
+  const coverStyle = t => {
+    if (!t.cover) return '';
+    probe(t);
+    return `background-image:url('${esc(hiRes.get(t.cover) || t.cover)}')" data-cover="${esc(t.cover)}`;
+  };
   const roundName = n => n === 2 ? 'Финал' : n === 4 ? 'Полуфинал' : n === 8 ? 'Четвертьфинал' : `Раунд ${roundNo}`;
 
   const card = (t, side) => {
@@ -253,6 +291,7 @@
   function render() {
     const pairs = round.length / 2, pairNo = idx / 2 + 1;
     const a = round[idx], b = round[idx + 1];
+    [round[idx + 2], round[idx + 3]].forEach(t => t && probe(t)); // заранее грузим обложки следующей пары
     const bgT = playing || a;
     bgEl.style.backgroundImage = bgT.cover ? `url('${esc(bgT.cover)}')` : '';
     main.innerHTML = `
