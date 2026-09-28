@@ -26,6 +26,8 @@
     #kh-root{--acc:#7c5cff;--acc2:#ff4d8d;--card:rgba(255,255,255,.06);--line:rgba(255,255,255,.12);
       position:fixed;inset:0;z-index:2147483000;background:#0b0b12;color:#fff;font:15px/1.4 Inter,-apple-system,Segoe UI,Roboto,sans-serif;overflow:auto}
     #kh-root *{box-sizing:border-box}
+    #kh-root,#kh-root h1,#kh-root div,#kh-root span,#kh-root li,#kh-root b,#kh-root kbd{color:#fff !important}
+    #kh-root .pbtn span{color:#111 !important}
     #kh-bg{position:fixed;inset:-60px;background:center/cover no-repeat;filter:blur(60px) saturate(1.4) brightness(.45);transition:background-image .6s;z-index:0}
     #kh-bg::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(124,92,255,.25),transparent 60%),linear-gradient(180deg,rgba(11,11,18,.3),#0b0b12 95%)}
     #kh-wrap{position:relative;z-index:1;min-height:100%;display:flex;flex-direction:column;align-items:center;padding:28px 24px 32px}
@@ -76,7 +78,7 @@
     #kh-root li .w{margin-left:auto;opacity:.5;font-size:13px;white-space:nowrap}
     #kh-root .spin{width:48px;height:48px;border-radius:50%;border:4px solid rgba(255,255,255,.1);border-top-color:var(--acc);animation:kh-spin 1s linear infinite;margin:40px auto 20px}
     @keyframes kh-spin{to{transform:rotate(360deg)}}
-    #kh-root .msg{min-height:20px;color:#ff8a80;text-align:center;margin-top:12px}
+    #kh-root .msg{min-height:20px;color:#ff8a80 !important;text-align:center;margin-top:12px}
     @media (max-width:640px){#kh-root .pair{gap:10px}#kh-root .vs{width:40px;height:40px;font-size:14px;margin:0 -12px}#kh-root .card{padding:10px;border-radius:18px;gap:10px}
       #kh-root .t{font-size:16px}#kh-root .a{font-size:13px}#kh-root .pbtn span{width:56px;height:56px;font-size:22px}#kh-root .win{font-size:14px;padding:12px}#kh-root kbd{display:none}}
   </style><div id="kh-bg"></div><button class="top" id="kh-close" title="Закрыть">✕</button>
